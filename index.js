@@ -6,7 +6,7 @@ const wait = n => new Promise(r => setTimeout(r, n));
 
 const PONG = '{"type": "pong"}';
 
-const STALE_TIMEOUT = 2000;
+const STALE_TIMEOUT = 3500;
 
 // this endpoint is used by the sample code on
 // https://github.com/ftexchange/ftx/blob/d387304bcc6f479e0ecae8273ad84eda986f5237/websocket/client.py#L13
@@ -47,7 +47,7 @@ class Connection extends EventEmitter {
         this.connected = true;
 
         clearTimeout(this.openTimeout);
-        this.heartbeat = setInterval(this.ping, 5 * 1000);
+        this.heartbeat = setInterval(this.ping, 15 * 1000);
 
         this.isReadyHook();
         resolve();
@@ -111,8 +111,8 @@ class Connection extends EventEmitter {
   // not a proper op, but forces a response so
   // we know the connection isn't stale
   ping = () => {
-    if(this.pingAt && this.pongAt > this.pingAt && this.pongAt - this.pingAt > STALE_TIMEOUT) {
-      console.error(new Date, '[FTX] did NOT receive pong in time, reconnecting', {
+    if(this.pingAt && this.pongAt < this.pingAt) {
+      console.error(new Date, '[FTX] did NOT receive pong, reconnecting', {
         pingAt: this.pingAt,
         pongAt: this.pongAt
       });
@@ -154,7 +154,7 @@ class Connection extends EventEmitter {
     this.lastMessageAt = Date.now();
     let payload;
 
-    if(e.data === PONG && this.lastMessageAt - this.pingAt < 5000) {
+    if(e.data === PONG) {
       this.pongAt = this.lastMessageAt;
       return;
     }
